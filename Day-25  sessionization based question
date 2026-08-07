@@ -1,0 +1,62 @@
+-- Suppose you are working as a Data Analyst at Google Analytics.
+--
+-- The analytics team wants to analyze user activity on the website and identify
+-- individual user sessions.
+--
+-- A session is defined as a continuous period of user activity.
+-- A new session begins whenever the time gap between two consecutive events
+-- of the same user is greater than 30 minutes.
+--
+-- Your task is to assign a session_id to every event for each user.
+--
+-- Rules:
+-- 1. The first event of every user always starts Session 1.
+-- 2. If the gap between the current event and the previous event is more than
+--    30 minutes, start a new session.
+-- 3. Otherwise, the event belongs to the current session.
+--
+-- Return:
+-- user_id,
+-- event_time,
+-- session_id
+--
+-- Order the output by user_id and event_time.
+
+USE 30days_sql_challange;
+
+DROP TABLE IF EXISTS user_events;
+
+CREATE TABLE user_events
+(
+    user_id INT,
+    event_time DATETIME
+);
+
+INSERT INTO user_events (user_id, event_time) VALUES
+(1,'2024-01-01 10:00:00'),
+(1,'2024-01-01 10:15:00'),
+(1,'2024-01-01 11:00:00'),
+(1,'2024-01-01 11:20:00'),
+(1,'2024-01-01 12:10:00'),
+
+(2,'2024-01-01 09:00:00'),
+(2,'2024-01-01 09:20:00'),
+(2,'2024-01-01 10:05:00'),
+(2,'2024-01-01 10:25:00'),
+(2,'2024-01-01 11:10:00'),
+
+(3,'2024-01-01 08:00:00'),
+(3,'2024-01-01 08:45:00'),
+(3,'2024-01-01 09:00:00');
+
+SELECT * FROM user_events;
+
+with lags as (
+select user_id,event_time,
+lag(event_time)over(partition by user_id order by event_time) as prev
+from user_events 
+)
+select user_id,event_time,
+sum(case when timestampdiff(minute,prev,event_time)>30 then 1 else 0 end)over(
+													partition by user_id order by event_time ) +1 as session_id
+from lags ;
