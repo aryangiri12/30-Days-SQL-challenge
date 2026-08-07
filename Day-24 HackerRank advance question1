@@ -1,0 +1,98 @@
+-- Suppose you are working as a Data Analyst for an online gaming platform.
+--
+-- The platform hosts multiple gaming events where participants can attempt
+-- an event multiple times to improve their scores.
+--
+-- The analytics team wants to prepare the final leaderboard for each event.
+--
+-- A participant's highest score in an event should be considered as
+-- their final score.
+--
+-- Write an SQL query to display the top 3 ranks for every event.
+--
+-- Rules:
+-- 1. Consider only the highest score of each participant in an event.
+-- 2. Rank participants based on their highest score in descending order.
+-- 3. Participants with the same score should receive the same rank.
+--    (Use Dense Rank.)
+-- 4. Display the names of participants securing Rank 1, Rank 2 and Rank 3.
+-- 5. If multiple participants share the same rank, display all their names
+--    separated by commas.
+--
+-- Return:
+-- event_id,
+-- first,
+-- second,
+-- third
+--
+-- Order the output by event_id.
+
+USE 30days_sql_challange;
+
+DROP TABLE IF EXISTS scoretable;
+
+CREATE TABLE scoretable
+(
+    event_id INT,
+    participant_name VARCHAR(100),
+    score INT
+);
+
+INSERT INTO scoretable VALUES
+-- Event 101
+(101,'Alice',85),
+(101,'Alice',92),
+(101,'Bob',90),
+(101,'Bob',88),
+(101,'Charlie',90),
+(101,'David',82),
+(101,'David',80),
+(102,'Emma',95),
+(102,'Emma',90),
+(102,'Frank',91),
+(102,'Grace',95),
+(102,'Henry',89),
+(102,'Henry',85),
+(103,'Ivy',80),
+(103,'Jack',80),
+(103,'Kevin',75),
+(103,'Liam',70),
+(103,'Liam',65),
+(103,'Mia',75);
+
+SELECT * FROM scoretable;
+
+
+WITH cte AS (
+    SELECT
+        event_id,
+        participant_name,
+        MAX(score) AS best,
+        DENSE_RANK() OVER (
+            PARTITION BY event_id
+            ORDER BY MAX(score) DESC
+        ) AS rnk
+    FROM scoretable
+    GROUP BY event_id, participant_name
+)
+
+SELECT
+    event_id,
+    GROUP_CONCAT(
+        CASE WHEN rnk = 1 THEN participant_name END
+        ORDER BY participant_name
+        SEPARATOR ','
+    ) AS first,
+    GROUP_CONCAT(
+        CASE WHEN rnk = 2 THEN participant_name END
+        ORDER BY participant_name
+        SEPARATOR ','
+    ) AS second,
+    GROUP_CONCAT(
+        CASE WHEN rnk = 3 THEN participant_name END
+        ORDER BY participant_name
+        SEPARATOR ','
+    ) AS third
+FROM cte
+GROUP BY event_id
+ORDER BY event_id;
